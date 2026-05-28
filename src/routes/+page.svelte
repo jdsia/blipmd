@@ -663,6 +663,11 @@
       {activeTabId}
       {vaultPath}
       onSelectTab={(id) => (activeTabId = id)}
+      onCloseTab={closeTab}
+      onOpenSearchModal={() => {
+        showSearchModal = true;
+        scanVault();
+      }}
       onOpenScratchpad={openScratchpad}
       onCreateNewTab={createNewTab}
       onSelectDirectory={selectVault}
