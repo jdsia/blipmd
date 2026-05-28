@@ -32,6 +32,8 @@
     isNew: boolean;
     filePath: string;
     isSaved: boolean;
+    history?: string[];
+    historyIndex?: number;
   }
 
   interface SearchResult {
@@ -52,6 +54,7 @@
   let searchInputEl = $state<HTMLInputElement | null>(null);
   let allVaultNotes = $state<SearchResult[]>([]);
   let autoSaveTimeout: any;
+  let historyTimeout: any;
   let zoomLevel = $state(13); // Default font size in px
 
   // Lifecycle & Storage
@@ -273,6 +276,12 @@
         existingTab.content = parsed.content;
         existingTab.isSaved = true;
         activeTabId = existingTab.id;
+        if (!existingTab.history) {
+          existingTab.history = [parsed.content];
+          existingTab.historyIndex = 0;
+        } else {
+          pushHistory(existingTab, parsed.content);
+        }
       } else {
         const newId = Math.random().toString(36).substring(7);
         const scratchpadTab: Tab = {
@@ -284,6 +293,8 @@
           isNew: false,
           filePath: scratchpadPath,
           isSaved: true,
+          history: [parsed.content],
+          historyIndex: 0,
         };
         tabs = [...tabs, scratchpadTab];
         activeTabId = newId;
@@ -320,6 +331,8 @@
       isNew: true,
       filePath: "",
       isSaved: false,
+      history: [""],
+      historyIndex: 0,
     };
     tabs = [...tabs, newTab];
     activeTabId = newId;
@@ -348,6 +361,8 @@
         isNew: false,
         filePath: note.path,
         isSaved: true,
+        history: [parsed.content],
+        historyIndex: 0,
       };
 
       tabs = [...tabs, openedTab];
@@ -488,10 +503,65 @@
     }
   }
 
+  // Debounced auto save & history recording
+  function pushHistory(tab: Tab, content: string) {
+    if (!tab.history) {
+      tab.history = [content];
+      tab.historyIndex = 0;
+      return;
+    }
+
+    const currentIndex = tab.historyIndex ?? 0;
+    if (tab.history[currentIndex] === content) {
+      return;
+    }
+
+    // Slice off any redo history
+    tab.history = tab.history.slice(0, currentIndex + 1);
+    tab.history.push(content);
+    tab.historyIndex = tab.history.length - 1;
+
+    // Cap history size to 200 states
+    if (tab.history.length > 200) {
+      tab.history.shift();
+      if (tab.historyIndex !== undefined) {
+        tab.historyIndex--;
+      }
+    }
+  }
+
+  function undo() {
+    if (!activeTab || !activeTab.history || activeTab.historyIndex === undefined || activeTab.historyIndex <= 0) {
+      return;
+    }
+
+    activeTab.historyIndex--;
+    activeTab.content = activeTab.history[activeTab.historyIndex];
+    activeTab.isSaved = false;
+  }
+
+  function redo() {
+    if (!activeTab || !activeTab.history || activeTab.historyIndex === undefined || activeTab.historyIndex >= activeTab.history.length - 1) {
+      return;
+    }
+
+    activeTab.historyIndex++;
+    activeTab.content = activeTab.history[activeTab.historyIndex];
+    activeTab.isSaved = false;
+  }
+
   // Debounced auto save
   function handleInput() {
     if (activeTab) {
       activeTab.isSaved = false;
+
+      // Debounce history recording
+      clearTimeout(historyTimeout);
+      historyTimeout = setTimeout(() => {
+        if (activeTab) {
+          pushHistory(activeTab, activeTab.content);
+        }
+      }, 800); // 800ms debounce
     }
     clearTimeout(autoSaveTimeout);
     autoSaveTimeout = setTimeout(() => {
@@ -507,6 +577,7 @@
         activeTab.content = text;
         activeTab.isSaved = false;
         handleInput();
+        pushHistory(activeTab, activeTab.content);
       }
     } catch (err) {
       console.error("Failed to read clipboard:", err);
@@ -529,6 +600,7 @@
     activeTab.content =
       text.substring(0, start) + replacement + text.substring(end);
     handleInput();
+    pushHistory(activeTab, activeTab.content);
 
     setTimeout(() => {
       textarea.focus();
@@ -567,6 +639,14 @@
     if ((event.ctrlKey || event.metaKey) && event.key === "0") {
       event.preventDefault();
       zoomLevel = 13; // Reset to default
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key === "z") {
+      event.preventDefault();
+      undo();
+    }
+    if ((event.ctrlKey || event.metaKey) && (event.key === "y" || (event.shiftKey && event.key === "Z"))) {
+      event.preventDefault();
+      redo();
     }
   }
 </script>
@@ -841,6 +921,31 @@
         </button>
 
         <div class="formatting-helpers">
+          <button
+            class="btn-icon"
+            onclick={undo}
+            disabled={!activeTab.history || activeTab.historyIndex === undefined || activeTab.historyIndex <= 0}
+            title="Undo (Ctrl+Z)"
+            style="opacity: {!activeTab.history || activeTab.historyIndex === undefined || activeTab.historyIndex <= 0 ? 0.35 : 1};"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+              <path d="M3 7v6h6"></path>
+              <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+            </svg>
+          </button>
+          <button
+            class="btn-icon"
+            onclick={redo}
+            disabled={!activeTab.history || activeTab.historyIndex === undefined || activeTab.historyIndex >= activeTab.history.length - 1}
+            title="Redo (Ctrl+Y)"
+            style="opacity: {!activeTab.history || activeTab.historyIndex === undefined || activeTab.historyIndex >= activeTab.history.length - 1 ? 0.35 : 1};"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+              <path d="M21 7v6h-6"></path>
+              <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
+            </svg>
+          </button>
+          <span style="width: 1px; height: 16px; background-color: var(--color-mist); margin: 0 4px; align-self: center;"></span>
           <button
             class="btn-icon"
             onclick={() => insertFormat("**", "**")}
