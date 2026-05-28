@@ -1,5 +1,7 @@
 # pumice
 
+![pumice](static/pumice.png)
+
 A minimalist, powerful desktop companion for Obsidian. I personally built it for myself as I wanted a lightweight markdown editor that fit the aesthetic I wanted. I didn't build it to replace Obsidian, its just that running Obsidian was way too heavy for my laptop, especially when running it alongside like 3 other Electron-based apps. (spotify, chrome, etc.)
 
 ---
