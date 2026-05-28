@@ -10,7 +10,7 @@ Obsidian is an incredible tool for managing a second brain, but under the hood i
 
 If you already keep a browser, an IDE, a chat client, and other tools open, running multiple Electron-based apps can quickly degrade system performance and consume gigabytes of RAM. Launching a heavy Electron window just to jot down a quick 2-line thought or append a daily journal entry is slow and resource-heavy.
 
-Pumice operates on the Unix philosophy: do one thing well.
+blipmd operates on the Unix philosophy: do one thing well.
 
 * Instant launch: starts in milliseconds
 * Zero Electron overhead: powered by Tauri v2 and the system's native webview
@@ -21,7 +21,7 @@ Pumice operates on the Unix philosophy: do one thing well.
 
 ## Tech Stack & Design Architecture
 
-Pumice leverages a modern, ultra-lightweight stack to maximize efficiency:
+blipmd leverages a modern, ultra-lightweight stack to maximize efficiency:
 
 * Tauri v2 (Rust): high-performance, secure backend handling native file I/O and system tray management
 * Svelte 5 + TypeScript: fast, reactive frontend rendering for smooth UI performance
@@ -37,7 +37,6 @@ Pumice leverages a modern, ultra-lightweight stack to maximize efficiency:
 * Tab-based navigation: quick pills for open documents, folder shortcuts, and new entries
 * Smart search: search-based navigation instead of heavy file trees
 * Debounced auto-save: writes edits directly to local .md files as you type
-* Monospace aesthetic: muted flat tones, compact high-density layout
 * Global hotkey and system tray: instantly open or dismiss the editor; runs quietly in the background when closed
 
 ---
@@ -46,7 +45,7 @@ Pumice leverages a modern, ultra-lightweight stack to maximize efficiency:
 
 ### Prerequisites
 
-You need Node.js and Rust installed on your machine to build and run Pumice.
+You need Node.js and Rust installed on your machine to build and run blipmd.
 
 ### Run in Development Mode
 
