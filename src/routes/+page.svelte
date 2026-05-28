@@ -15,6 +15,11 @@
   import MarkdownIt from "markdown-it";
   import "./app.css";
   import { parseNote, stringifyNote, type NoteMetadata } from "./noteUtils";
+  import type { Tab, SearchResult } from "./types";
+  import TabBar from "./TabBar.svelte";
+  import MetadataHeader from "./MetadataHeader.svelte";
+  import BottomBar from "./BottomBar.svelte";
+  import SearchModal from "./SearchModal.svelte";
 
   // Initialize Markdown parser
   const md = new MarkdownIt({
@@ -23,24 +28,6 @@
     typographer: true,
   });
 
-  interface Tab {
-    id: string; // Unique ID or filePath
-    title: string;
-    content: string;
-    tags: string; // Comma separated for easy editing in input
-    created: string;
-    isNew: boolean;
-    filePath: string;
-    isSaved: boolean;
-    history?: string[];
-    historyIndex?: number;
-  }
-
-  interface SearchResult {
-    name: string;
-    path: string;
-    tags?: string[];
-  }
 
   // --- Svelte 5 Runes ---
   let vaultPath = $state("");
@@ -671,168 +658,15 @@
     </div>
   {:else}
     <!-- 1. TAB PILLS HEADER -->
-    <header class="tab-header">
-      <div class="tabs-list">
-        <!-- Vault/Folder Pill (📁 personal) -->
-        <button
-          class="tab-pill folder"
-          onclick={selectVault}
-          title="Click to change vault folder"
-        >
-          <span class="bracket">[</span><svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="margin-right: 4px; vertical-align: middle;"
-            ><path
-              d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-            ></path></svg
-          >{vaultPath.split(/[/\\]/).filter(Boolean).pop()?.toLowerCase() ||
-            "vault"}<span class="bracket">]</span>
-        </button>
-        <!-- Category Pill (/inbox) with Search Icon! -->
-        <button
-          class="tab-pill inbox-indicator"
-          onclick={() => {
-            showSearchModal = true;
-            scanVault();
-          }}
-          title="Search notes"
-        >
-          <span class="bracket">[</span><svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="margin-right: 4px; vertical-align: middle;"
-            ><circle cx="11" cy="11" r="8"></circle><line
-              x1="21"
-              y1="21"
-              x2="16.65"
-              y2="16.65"
-            ></line></svg
-          >/search<span class="bracket">]</span>
-        </button>
-
-        <!-- Scratchpad Pill with Writing Icon! -->
-        <button
-          class="tab-pill scratchpad-indicator"
-          onclick={() => openScratchpad(true)}
-          title="Open Scratchpad"
-        >
-          <span class="bracket">[</span><svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="margin-right: 4px; vertical-align: middle;"
-            ><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"></path></svg
-          >/scratchpad<span class="bracket">]</span>
-        </button>
-
-        <!-- Divider for layout spacing -->
-        <div style="width: 8px;"></div>
-
-        {#each tabs as tab (tab.id)}
-          <button
-            class="tab-pill note-tab"
-            class:active={activeTabId === tab.id}
-            onclick={() => (activeTabId = tab.id)}
-          >
-            {#if activeTabId === tab.id}
-              <span class="bracket">[</span>
-            {/if}
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              style="margin-right: 4px; vertical-align: middle;"
-              ><path
-                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-              ></path><polyline points="14 2 14 8 20 8"></polyline></svg
-            >
-            <span class="tab-indicator">{tab.isSaved ? "" : "*"}</span>
-            {tab.title.toLowerCase().replace(/\.md$/, "")}.md
-            <span
-              class="tab-close"
-              role="button"
-              tabindex="0"
-              onclick={(e) => {
-                e.stopPropagation();
-                closeTab(tab.id, e);
-              }}
-              onkeydown={(e) => {
-                e.stopPropagation();
-                e.key === "Enter" && closeTab(tab.id, e);
-              }}
-            >
-              <svg
-                width="8"
-                height="8"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><line x1="18" y1="6" x2="6" y2="18"></line><line
-                  x1="6"
-                  y1="6"
-                  x2="18"
-                  y2="18"
-                ></line></svg
-              >
-            </span>
-            {#if activeTabId === tab.id}
-              <span class="bracket">]</span>
-            {/if}
-          </button>
-        {/each}
-
-        <button
-          class="tab-pill new-entry"
-          onclick={createNewTab}
-          title="New Note"
-        >
-          <span class="bracket">[</span><svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="margin-right: 4px; vertical-align: middle;"
-            ><line x1="12" y1="5" x2="12" y2="19"></line><line
-              x1="5"
-              y1="12"
-              x2="19"
-              y2="12"
-            ></line></svg
-          >
-          new.md<span class="bracket">]</span>
-        </button>
-      </div>
-    </header>
+    <TabBar
+      {tabs}
+      {activeTabId}
+      {vaultPath}
+      onSelectTab={(id) => (activeTabId = id)}
+      onOpenScratchpad={openScratchpad}
+      onCreateNewTab={createNewTab}
+      onSelectDirectory={selectVault}
+    />
 
     <!-- 3. MAIN EDITOR OR PREVIEW AREA -->
     <section class="editor-area">
@@ -847,43 +681,10 @@
           </div>
         {:else}
           <!-- Embedded Inline Metadata (Obsidian Style) -->
-          <div class="note-meta-header">
-            <!-- Path representation styled like your site ~ / inbox / note-title -->
-            <div class="site-path-header">
-              ~ / inbox / {activeTab.title.toLowerCase().replace(/\.md$/, "")}
-            </div>
-
-            <div class="title-container-row">
-              <input
-                type="text"
-                class="note-title-input"
-                bind:value={activeTab.title}
-                oninput={handleInput}
-                placeholder="untitled"
-              />
-            </div>
-
-            <div class="note-meta-row">
-              <span class="meta-label">tags: </span>
-              <span class="meta-bracket">[</span>
-              <input
-                type="text"
-                class="note-tags-input"
-                bind:value={activeTab.tags}
-                oninput={handleInput}
-                placeholder="dev, ideas"
-              />
-              <span class="meta-bracket">]</span>
-              <span class="meta-divider">•</span>
-              <span class="meta-label">created: </span>
-              <input
-                type="date"
-                class="note-date-input"
-                bind:value={activeTab.created}
-                oninput={handleInput}
-              />
-            </div>
-          </div>
+          <MetadataHeader
+            {activeTab}
+            onInput={handleInput}
+          />
 
           <textarea
             id="editor-textarea"
@@ -912,188 +713,30 @@
 
     <!-- 4. BOTTOM ACTION TOOLBAR -->
     {#if activeTab}
-      <footer class="bottom-bar">
-        <button
-          class="tab-pill action"
-          onclick={(e) => closeTab(activeTab.id, e)}
-        >
-          <span class="bracket">[</span>close<span class="bracket">]</span>
-        </button>
-
-        <div class="formatting-helpers">
-          <button
-            class="btn-icon"
-            onclick={undo}
-            disabled={!activeTab.history || activeTab.historyIndex === undefined || activeTab.historyIndex <= 0}
-            title="Undo (Ctrl+Z)"
-            style="opacity: {!activeTab.history || activeTab.historyIndex === undefined || activeTab.historyIndex <= 0 ? 0.35 : 1};"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
-              <path d="M3 7v6h6"></path>
-              <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
-            </svg>
-          </button>
-          <button
-            class="btn-icon"
-            onclick={redo}
-            disabled={!activeTab.history || activeTab.historyIndex === undefined || activeTab.historyIndex >= activeTab.history.length - 1}
-            title="Redo (Ctrl+Y)"
-            style="opacity: {!activeTab.history || activeTab.historyIndex === undefined || activeTab.historyIndex >= activeTab.history.length - 1 ? 0.35 : 1};"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
-              <path d="M21 7v6h-6"></path>
-              <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
-            </svg>
-          </button>
-          <span style="width: 1px; height: 16px; background-color: var(--color-mist); margin: 0 4px; align-self: center;"></span>
-          <button
-            class="btn-icon"
-            onclick={() => insertFormat("**", "**")}
-            title="Bold">B</button
-          >
-          <button
-            class="btn-icon"
-            onclick={() => insertFormat("*", "*")}
-            title="Italic">I</button
-          >
-          <button
-            class="btn-icon"
-            onclick={() => insertFormat("# ")}
-            title="Heading">H</button
-          >
-          <button
-            class="btn-icon"
-            onclick={() => insertFormat("- ")}
-            title="Bullet List">•</button
-          >
-          <button
-            class="btn-icon"
-            onclick={() => insertFormat("[", "](url)")}
-            title="Link"
-            ><svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              style="vertical-align: middle;"
-              ><path
-                d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
-              ></path><path
-                d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
-              ></path></svg
-            ></button
-          >
-          <button
-            class="btn-icon"
-            onclick={() => insertFormat("`", "`")}
-            title="Inline Code">`</button
-          >
-        </div>
-
-        <div class="bottom-actions">
-          <button
-            class="tab-pill action"
-            onclick={() => (showPreview = !showPreview)}
-          >
-            <span class="bracket">[</span>{showPreview
-              ? "editor"
-              : "preview"}<span class="bracket">]</span>
-          </button>
-          <button
-            class="tab-pill action"
-            class:active={!activeTab.isSaved}
-            onclick={saveActiveNote}
-          >
-            <span class="bracket">[</span>{activeTab.isSaved
-              ? "saved"
-              : "save"}<span class="bracket">]</span>
-          </button>
-        </div>
-      </footer>
+      <BottomBar
+        {activeTab}
+        {showPreview}
+        onCloseTab={closeTab}
+        onTogglePreview={() => (showPreview = !showPreview)}
+        onSaveActiveNote={saveActiveNote}
+        onUndo={undo}
+        onRedo={redo}
+        onInsertFormat={insertFormat}
+      />
     {/if}
   {/if}
 
   <!-- SEARCH OVERLAY MODAL -->
-  {#if showSearchModal}
-    <div
-      class="modal-backdrop"
-      role="button"
-      tabindex="0"
-      onclick={() => (showSearchModal = false)}
-      onkeydown={(e) => e.key === "Escape" && (showSearchModal = false)}
-    >
-      <div
-        class="modal-content"
-        role="dialog"
-        onclick={(e) => e.stopPropagation()}
-        onkeydown={(e) => e.stopPropagation()}
-      >
-        <div class="search-header">
-          <input
-            bind:this={searchInputEl}
-            type="text"
-            class="search-input"
-            placeholder="Type to search note title..."
-            bind:value={searchQuery}
-            onkeydown={(e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                showSearchModal = false;
-              } else if (e.key === "Enter") {
-                e.preventDefault();
-                if (
-                  searchResults.length > 0 &&
-                  searchResults[selectedSearchIndex]
-                ) {
-                  openExistingNote(searchResults[selectedSearchIndex]);
-                }
-              } else if (e.key === "ArrowDown") {
-                e.preventDefault();
-                selectedSearchIndex =
-                  (selectedSearchIndex + 1) % searchResults.length;
-              } else if (e.key === "ArrowUp") {
-                e.preventDefault();
-                selectedSearchIndex =
-                  (selectedSearchIndex - 1 + searchResults.length) %
-                  searchResults.length;
-              }
-            }}
-          />
-        </div>
-        <div class="search-results-list">
-          {#each searchResults as result, idx}
-            <button
-              class="search-item"
-              class:selected={idx === selectedSearchIndex}
-              onclick={() => openExistingNote(result)}
-            >
-              <div style="display: flex; justify-content: space-between; align-items: baseline; width: 100%;">
-                <span class="search-item-name">{result.name}</span>
-                {#if result.tags && result.tags.length > 0}
-                  <span style="font-size: 0.85rem; font-style: italic; color: var(--color-slate);">
-                    [{result.tags.join(", ")}]
-                  </span>
-                {/if}
-              </div>
-              <span class="search-item-path"
-                >{result.path.replace(vaultPath, "")}</span
-              >
-            </button>
-          {:else}
-            <p class="no-results">No matching notes found</p>
-          {/each}
-        </div>
-        <div class="modal-footer">
-          <span>ctrl-f to open | </span>
-          <span>Esc to Close</span>
-        </div>
-      </div>
-    </div>
-  {/if}
+  <SearchModal
+    bind:showSearchModal
+    bind:searchQuery
+    {searchResults}
+    bind:selectedSearchIndex
+    {vaultPath}
+    bind:searchInputEl
+    onClose={() => (showSearchModal = false)}
+    onSelectNote={openExistingNote}
+  />
 </main>
 
 
