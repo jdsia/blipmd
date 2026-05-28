@@ -1,4 +1,4 @@
-# blipmd
+# pumice
 
 A minimalist, powerful desktop companion for Obsidian. I personally built it for myself as I wanted a lightweight markdown editor that fit the aesthetic I wanted. I didn't build it to replace Obsidian, its just that running Obsidian was way too heavy for my laptop, especially when running it alongside like 3 other Electron-based apps. (spotify, chrome, etc.)
 
@@ -10,7 +10,7 @@ Obsidian is an incredible tool for managing a second brain, but under the hood i
 
 If you already keep a browser, an IDE, a chat client, and other tools open, running multiple Electron-based apps can quickly degrade system performance and consume gigabytes of RAM. Launching a heavy Electron window just to jot down a quick 2-line thought or append a daily journal entry is slow and resource-heavy.
 
-blipmd operates on the Unix philosophy: do one thing well.
+pumice operates on the Unix philosophy: do one thing well.
 
 * Instant launch: starts in milliseconds
 * Zero Electron overhead: powered by Tauri v2 and the system's native webview
@@ -21,7 +21,7 @@ blipmd operates on the Unix philosophy: do one thing well.
 
 ## Tech Stack & Design Architecture
 
-blipmd leverages a modern, ultra-lightweight stack to maximize efficiency:
+pumice leverages a modern, ultra-lightweight stack to maximize efficiency:
 
 * Tauri v2 (Rust): high-performance, secure backend handling native file I/O and system tray management
 * Svelte 5 + TypeScript: fast, reactive frontend rendering for smooth UI performance
